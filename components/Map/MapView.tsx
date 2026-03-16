@@ -110,6 +110,7 @@ export default function MapView({
     return (
         <MapContainer
             center={[centerLat, centerLng]}
+            attributionControl={false} 
             zoom={14}
             zoomControl={false}
             style={{ width: '100%', height: '100%' }}
