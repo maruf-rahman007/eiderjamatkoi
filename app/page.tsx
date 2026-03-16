@@ -35,11 +35,19 @@ export default function HomePage() {
     useAuthListener();
 
     const { lat, lng, error: geoError } = useGeolocation();
-    const { mosques, loading, refetch } = useMosques({ lat, lng });
+
+    // We use a separate state for where to fetch mosques from, so the user can pan the map freely
+    const [mapCenter, setMapCenter] = useState<{ lat: number, lng: number } | null>(null);
 
     const [selectedMosque, setSelectedMosque] = useState<MosqueWithTimes | null>(null);
     const [showLogin, setShowLogin] = useState(false);
     const [showSubmit, setShowSubmit] = useState(false);
+
+    // If mapCenter exists, fetch from there. Otherwise, use user's GPS if ready
+    const fetchLat = mapCenter ? mapCenter.lat : lat;
+    const fetchLng = mapCenter ? mapCenter.lng : lng;
+
+    const { mosques, loading, refetch } = useMosques({ lat: fetchLat, lng: fetchLng });
 
     // Close popup on map click (handled inside MapView)
     const handleMarkerClick = (mosque: MosqueWithTimes) => {
@@ -64,6 +72,7 @@ export default function HomePage() {
                     userLng={lng}
                     mosques={mosques}
                     onMarkerClick={handleMarkerClick}
+                    onCenterChange={(cLat, cLng) => setMapCenter({ lat: cLat, lng: cLng })}
                 />
 
                 <MapLegend />

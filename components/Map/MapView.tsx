@@ -87,11 +87,28 @@ function RecenterMap({ lat, lng }: { lat: number; lng: number }) {
     return null;
 }
 
+function MapEvents({
+    onCenterChange,
+}: {
+    onCenterChange?: (lat: number, lng: number) => void;
+}) {
+    const map = useMapEvents({
+        moveend: () => {
+            if (onCenterChange) {
+                const center = map.getCenter();
+                onCenterChange(center.lat, center.lng);
+            }
+        },
+    });
+    return null;
+}
+
 interface MapViewProps {
     userLat: number | null;
     userLng: number | null;
     mosques: MosqueWithTimes[];
     onMarkerClick: (mosque: MosqueWithTimes) => void;
+    onCenterChange?: (lat: number, lng: number) => void;
 }
 
 // Default center: Dhaka
@@ -103,9 +120,13 @@ export default function MapView({
     userLng,
     mosques,
     onMarkerClick,
+    onCenterChange,
 }: MapViewProps) {
     const centerLat = userLat ?? DEFAULT_LAT;
     const centerLng = userLng ?? DEFAULT_LNG;
+
+    // Track if we've already done the initial recenter
+    const hasRecentered = useRef(false);
 
     return (
         <MapContainer
@@ -121,10 +142,17 @@ export default function MapView({
                 maxZoom={19}
             />
 
-            {/* Re-center when user location loads */}
-            {userLat && userLng && (
+            <MapEvents onCenterChange={onCenterChange} />
+
+            {/* Re-center only once when user location first loads */}
+            {userLat && userLng && !hasRecentered.current && (
                 <RecenterMap lat={userLat} lng={userLng} />
             )}
+            {/* Set the ref so we don't snap back repeatedly on pan */}
+            {(() => {
+                if (userLat && userLng) hasRecentered.current = true;
+                return null;
+            })()}
 
             {/* User location dot */}
             {userLat && userLng && (
