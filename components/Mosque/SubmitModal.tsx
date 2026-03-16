@@ -96,8 +96,12 @@ export default function SubmitModal({
 
             // Upload photo if selected
             if (photoFile) {
+                if (!idToken) {
+                    throw new Error('Authentication token missing. Please log in again.');
+                }
                 const tempId = `temp-${Date.now()}`;
-                photoUrl = await uploadMosquePhoto(photoFile, tempId);
+                // Pass the idToken from useAuth hook
+                photoUrl = await uploadMosquePhoto(photoFile, tempId, idToken);
             }
 
             const res = await fetch('/api/mosques', {
