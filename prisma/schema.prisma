@@ -1,0 +1,107 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id          String   @id @default(uuid())
+  firebaseUid String   @unique @map("firebase_uid")
+  displayName String?  @map("display_name")
+  phoneHash   String   @map("phone_hash")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  mosques     Mosque[]
+  prayerTimes EidPrayerTime[]
+  votes       Vote[]
+  reports     Report[]
+  dailyLogs   DailySubmissionLog[]
+
+  @@map("users")
+}
+
+model Mosque {
+  id          String   @id @default(uuid())
+  name        String
+  nameBn      String?  @map("name_bn")
+  lat         Float
+  lng         Float
+  photoUrl    String?  @map("photo_url")
+  submittedBy String?  @map("submitted_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user        User?           @relation(fields: [submittedBy], references: [id])
+  prayerTimes EidPrayerTime[]
+  reports     Report[]
+
+  @@map("mosques")
+}
+
+model EidPrayerTime {
+  id          String   @id @default(uuid())
+  mosqueId    String   @map("mosque_id")
+  jamaatTime  String   @map("jamaat_time") // "HH:MM" 24h format
+  year        Int
+  voteCount   Int      @default(0) @map("vote_count")
+  isSelected  Boolean  @default(false) @map("is_selected")
+  submittedBy String?  @map("submitted_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  mosque      Mosque   @relation(fields: [mosqueId], references: [id], onDelete: Cascade)
+  user        User?    @relation(fields: [submittedBy], references: [id])
+  votes       Vote[]
+  reports     Report[]
+
+  @@map("eid_prayer_times")
+}
+
+model Vote {
+  id           String   @id @default(uuid())
+  prayerTimeId String   @map("prayer_time_id")
+  userId       String   @map("user_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  prayerTime EidPrayerTime @relation(fields: [prayerTimeId], references: [id], onDelete: Cascade)
+  user       User          @relation(fields: [userId], references: [id])
+
+  @@unique([prayerTimeId, userId])
+  @@map("votes")
+}
+
+model Report {
+  id            String   @id @default(uuid())
+  mosqueId      String?  @map("mosque_id")
+  prayerTimeId  String?  @map("prayer_time_id")
+  reporterId    String   @map("reporter_id")
+  reason        String
+  suggestedTime String?  @map("suggested_time")
+  status        String   @default("pending") // pending | resolved | rejected
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  mosque     Mosque?        @relation(fields: [mosqueId], references: [id])
+  prayerTime EidPrayerTime? @relation(fields: [prayerTimeId], references: [id])
+  reporter   User           @relation(fields: [reporterId], references: [id])
+
+  @@map("reports")
+}
+
+model DailySubmissionLog {
+  id      String   @id @default(uuid())
+  userId  String   @map("user_id")
+  date    DateTime @default(now()) @db.Date @map("date")
+  count   Int      @default(1)
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, date])
+  @@map("daily_submission_logs")
+}
