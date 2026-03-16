@@ -18,22 +18,20 @@ export function getSupabaseAdmin() {
  */
 export async function uploadMosquePhoto(file: File, mosqueId: string): Promise<string> {
     const ext = file.name.split('.').pop();
-    const filename = `${mosqueId}-${Date.now()}.${ext}`;
+    const safeMosqueId = mosqueId.replace(/[^a-zA-Z0-9_-]/g, ''); // sanitize
+    const filename = `temp-${safeMosqueId}-${Date.now()}.${ext}`;
 
-    // Upload file
+    // optional: check file type
+    if (!file.type.startsWith('image/')) {
+        throw new Error('Only image files are allowed');
+    }
+
     const { error: uploadError } = await supabase.storage
         .from('mosque-photos')
-        .upload(filename, file, {
-            cacheControl: '3600',
-            upsert: true, // overwrite if exists
-        });
+        .upload(filename, file, { cacheControl: '3600', upsert: true });
 
     if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
 
-    // Get public URL (no error property)
-    const { data } = supabase.storage
-        .from('mosque-photos')
-        .getPublicUrl(filename);
-
-    return data.publicUrl; // this exists, TS happy now
+    const { data } = supabase.storage.from('mosque-photos').getPublicUrl(filename);
+    return data.publicUrl;
 }
