@@ -111,7 +111,7 @@ export default function SubmitModal({
                     nameBn: nameBn.trim() || undefined,
                     lat: parsedLat,
                     lng: parsedLng,
-                    photoUrl,
+                    photoUrl, // <-- now always valid if uploaded
                     jamaatTimes: validTimes,
                     userLat,
                     userLng,
@@ -125,8 +125,8 @@ export default function SubmitModal({
                 const data = await res.json();
                 toast.error(data.error || 'সমস্যা হয়েছে');
             }
-        } catch {
-            toast.error('নেটওয়ার্ক সমস্যা');
+        } catch (err: any) {
+            toast.error(err.message || 'নেটওয়ার্ক সমস্যা');
         } finally {
             setSubmitting(false);
         }
